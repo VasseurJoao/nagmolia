@@ -10,7 +10,7 @@ shinyServer(function(input, output) {
     net_cum_by_scene %>%
       filter(imp.x %in% 1:imp, imp.y %in% 1:imp) %>%
       simpleNetwork(
-        fontSize = 12, linkDistance = 200, zoom = TRUE,
+        fontSize = 12, linkDistance = 325, zoom = TRUE,
         linkColour = "#e62294", nodeColour = "#262875", opacity = 0.8,
         fontFamily = "Roboto"
       )
@@ -22,6 +22,15 @@ shinyServer(function(input, output) {
       linkDistance = 200,
       linkColour = "#e62294", nodeColour = "#262875", opacity = 0.8,
       fontFamily = "Roboto"
+    )
+  })
+
+  output$script_by_scene <- DT::renderDataTable({
+    DT::datatable(get_scene_script(input$scene),
+      rownames = FALSE, colnames = NULL, options = list(
+        dom = "t",
+        paging = FALSE
+      )
     )
   })
 })

@@ -4,7 +4,7 @@ remove_empty_lines <- function(data) {
 
 detect_characters <- function(data) {
   char_imp <- read.csv("data/char_imp.csv")
-  char_alias <- read.csv("data/char_alias.csv")
+  char_alias <- read.csv("data/char_alias.csv", sep = ";")
   char_indent <- "                                "
   n <- nchar(char_indent)
   movie_chars <- data %>%
@@ -18,7 +18,6 @@ detect_characters <- function(data) {
     filter(is_char) %>%
     select(-is_char, -raw) %>%
     left_join(char_imp, c("character" = "char")) %>%
-    filter(imp != 0, !is.na(imp)) %>%
     left_join(char_alias, c("character" = "alias_char")) %>%
     mutate(character = case_when(
       is.na(char) ~ character,
@@ -40,6 +39,7 @@ detect_scenes <- function(data) {
         (str_starts(raw, ext_scene) | str_starts(raw, int_scene)) &
           str_sub(raw, n + 1, n + 1) != " ",
       scene = str_trim(raw),
+      scene = paste0(scene, 1:n()),
       line = 1:n(),
       scene_number = 1:n()
     ) %>%
@@ -98,14 +98,20 @@ preprocess_movie_data <- function() {
   movie_db <- create_movie_db(chars, scenes)
 
   script_scenes <- movie_db %>%
-    left_join(scenes, "scene") %>% 
-    mutate(st = lead(line),
-           diff = line - st) %>% 
-    filter(diff != 0) %>% 
-    mutate(line_start = line,
-           line_end = st) %>% 
+    select(-imp, -character) %>%
+    distinct_all() %>%
+    left_join(scenes, "scene") %>%
+    mutate(
+      st = lead(line),
+      diff = line - st
+    ) %>%
+    filter(diff != 0) %>%
+    mutate(
+      line_start = line,
+      line_end = st
+    ) %>%
     select(scene_number = scene_number.x, line_start, line_end)
-  
+
   by_speaker_scene <- movie_db %>%
     count(scene_number, character)
 
@@ -133,10 +139,14 @@ get_network <- function(mult) {
 }
 
 get_scene_script <- function(n) {
-  movie_db <- readRDS("data/script_scenes.rds") %>% 
+  movie_db <- readRDS("data/script_scenes.rds") %>%
     filter(scene_number == n)
   raw <- readLines("data/magnolia_script.txt")
-  raw[(min(movie_db$line_start)-2):(max(movie_db$line_end)-2)]
+  data_frame(raw) %>%
+    remove_empty_lines() %>%
+    mutate(line = 1:n()) %>%
+    filter(line >= movie_db$line_start, line <= movie_db$line_end) %>%
+    select(-line)
 }
 
 get_cum_network <- function(mult) {

@@ -1,3 +1,4 @@
+library(DT)
 library(shiny)
 library(shinymaterial)
 library(zoo)
@@ -47,11 +48,11 @@ material_page(
   ),
   material_tab_content(
     tab_id = "by_scene_tab",
-    h1("Rede por cena"),
     material_row(
       material_column(
         material_card(
-          title = "Roteiro"
+          title = "Roteiro",
+          DT::dataTableOutput("script_by_scene")
         )
       ),
       material_column(
